@@ -1,0 +1,12 @@
+Redux Thunk đi kèm trong một gói gọi là redux-thunk( It comes in a separate package called redux thunk ). Chúng ta sẽ giải thích làm ác nào middleware làm việc sau; hiện tại; điều quan trọng hơn bạn cần phải biết: bằng bằng cách dùng middleware đặc biệt này, một action creator có thể trả về một FUNCTION thay vì một ACTION OBJECT. Cách này, khiến ACTION CREATOR trở thành một THUNK
+
+Khi một action creator trả về một FUNCTION, nó sẽ thực thi bởi Redux Thunk middleware. Function này không cần pure, do đó nó cho phép cho một tác dụng khác, bao gồm xử lý asynchrnomous API calls. Function cũng có thể dispatch actions - giống như synchronous actions chúng ta đã định nghĩa trước đó.
+
+*** ôn lại pure function:
+- chỉ trả về dữ liệu dựa trên argument
+- không thể thay đổi dữ liệu từ network hay database
+- không thể ghi đè dữ liệu trong mảng, nó trả về 1 mảng bằng cách dùng item map
+***
+
+Chúng ta vẫn có thể những THUNK action creators đặc biệt này trong actions.js file:
+

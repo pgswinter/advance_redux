@@ -1,0 +1,43 @@
+object.assign() dùng để copy những thuộc tính dữ liệu có thể đếm được từ một hoặc nhiều object đến những target objects (đối tượng được chọn). Nó sẽ trả về target object
+
+Các thuộc tính trong target sẽ ghi đè bởi những thuộc tính trong sources nếu chúng có cùng key. Những thuộc tính về sau sẽ bị ghi đè giống như những cái sớm hơn
+
+Object.assign() chỉ copy và sở hữu thuộc tính từ source object đến target object, nên nó sẽ bao gồm getters ans setters. Vì vậy nó gán thuộc tính thay vì copy hoặc định nghĩa thuộc tính mới,
+
+Điều này có thể làm cho nó không phù hợp với việc merge thuộc tính mới đến prototype nếu merge source chứa getters. Để định nghĩa việc copy thuộc tính, bao gồm cả đánh số thứ tự của nó, nằm trong prototypes Object.getOwnPropertyObject() và Object.defineProperty() nên được sử dụng để thay thể.
+
+Cả hai thuộc tính String và Symbol được copied
+
+Trong trường hợp là một error, ví dụ nếu là một thuộc tính không cho phép ghi (non-writable), một TypeError sẽ được đè lên, và thuộc tính được chọn có thể thay đổi nếu có bất kì thuộc tính được thêm mới trước khi đè lên (is raised)
+
+Lưu ý rằng Object,assign() không làm việc với null và undefined source values
+
+Ví dụ việc clone một đối tượng:
+
+var obj = { a: 1 };
+var copy = Object.assign({}, obj);
+console.log(copy); // { a: 1 }
+
+Cẩn thận với Deep Clone
+
+Để deep cloning, chúng ta cần sử dụng những thay thế khác vì Object.assign() copy giá trị thuộc tính . Nếu giá trị thuộc tính được reference tới một đối tượng, nó copied luôn đến reference value đó (Xem ví dụ ở file objectt_assign.html)
+
+Merging đối tượng (Xem ví dụ ở file objectt_assign.html)
+
+Merging đối tượng với thuộc tính giống nhau(Xem ví dụ ở file objectt_assign.html)
+
+Copy thuộc tính loại ký tự(Xem ví dụ ở file objectt_assign.html)
+
+Các thuộc tính trong mắt xích prototype 
+và các thuộc tính không đánh số 
+(2 thằng này) không thể bị copied (Xem ví dụ ở file objectt_assign.html)
+
+Những biến kiểu TEXT/STRING không phải kiểu Object sẽ được
+bọc trong objects khi copy bằng Object.assign().
+- null và undefined sẽ bị bỏ qua. 
+- lưu ý rằng chỉ "string" bọc mới có thể copy được và sở hữu thuộc tính đếm và mà thôi. Còn các biến kiểu SYMBOL/BOOLEAN - nếu không có sẵn thuộc tính đếm - sẽ bị bỏ qua hết
+(Xem ví dụ ở file objectt_assign.html)
+
+Những NGOẠI LỆ sẽ làm GIÁN ĐOẠN trong khi tiến hành việc copy(Xem ví dụ ở file objectt_assign.html)
+
+Copying accessors(Xem ví dụ ở file objectt_assign.html). Copy hàm

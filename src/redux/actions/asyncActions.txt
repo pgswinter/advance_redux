@@ -1,0 +1,282 @@
+Bất đồng bộ Action Creators
+
+Cuối cùng, làm cách nào chúng ta dùng synchronous action creators cái chúng ta đã định nghĩa trước đó cùng với network request? Cách chuẩn để thực hiện nó với Redux là sử dụng Redux Thunk Middleware
+
+*** Redux Thunk ***
+Cho phép bạn viết action creators để trả lại fucntion thay vì một action. The thunk có thể được dùng để lặp lại dispatch của một action, hoặc chỉ để dispatch nếu điều kiện chắc chắn xảy đến (is met). Function bên trong nhận cách thức lưu trữ dispatch và getState như đối số (parameters)
+
+Một action creator trả về một function để thực thi asynchromous dispatch:
+
+const INCREMENT_COUNTER = 'INCREMENT_COUNTER';
+
+function increment() {
+  return {
+    type: INCREMENT_COUNTER
+  };
+}
+
+function incrementAsync() {
+  return dispatch => {
+    setTimeout(() => {
+      // Có thể bao gồm đồng bộ hoặc bất đồng bộ actions với `dispatch`
+      dispatch(increment());
+    }, 1000);
+  };
+}
+
+Một action creator trả về một function để thực thi điều kiện dispatch:
+
+function incrementIfOdd() {
+  return (dispatch, getState) => {
+    const { counter } = getState();
+
+    if (counter % 2 === 0) {
+      return;
+    }
+
+    dispatch(increment());
+  };
+}
+
+thunk là gì?
+
+Một thunk là một function bọc expression để trì hoãn đánh giá (evaluation) của nó
+
+// calculation of 1 + 2 is immediate
+// x === 3
+let x = 1 + 2;
+
+// calculation of 1 + 2 is delayed
+// foo can be called later to perform the calculation
+let foo = () => 1 + 2;
+// foo is a thunk!
+
+Cài đặt
+
+npm install --save redux-thunk applyMiddleware():
+
+Sau đó, kích hoạt Redux Thunk dùng applyMiddleware()
+
+import { createStore, applyMiddleware } from 'redux';
+import thunk from 'redux-thunk';
+import rootReducer from './reducers/index';
+
+// Note: this API requires redux@>=3.1.0
+const store = createStore(
+  rootReducer,
+  applyMiddleware(thunk)
+);
+
+Thành phần
+
+Bất kỳ dữ liệu trả về trong function sẽ tồn tại như trả về dữ liệu của dispatch. Điều này thuận lợi để đáp ứng một asynchronous control flow với thunk action creators cùng với nhau và trả về Promise để đợi từng phần khác nhau kết thúc/hoàn thành(completion)
+
+import { createStore, applyMiddleware } from 'redux';
+import thunk from 'redux-thunk';
+import rootReducer from './reducers';
+
+// Note: this API requires redux@>=3.1.0
+const store = createStore(
+  rootReducer,
+  applyMiddleware(thunk)
+);
+
+function fetchSecretSauce() {
+  return fetch('https://www.google.com/search?q=secret+sauce');
+}
+
+// Dưới đây là những action creators bình thường trước h bạn thấy (you have seen so far)
+// Những actions chúng trả về có thể dispatched mà không có bất kỳ middleware nào
+// Tuy nhhiên, chúng chỉ mô tả "thực tế" làm được vậy chứ không phải "async flow" 
+
+function makeASandwich(forPerson, secretSauce) {
+  return {
+    type: 'MAKE_SANDWICH',
+    forPerson,
+    secretSauce
+  };
+}
+
+function apologize(fromPerson, toPerson, error) {
+  return {
+    type: 'APOLOGIZE',
+    fromPerson,
+    toPerson,
+    error
+  };
+}
+
+function withdrawMoney(amount) {
+  return {
+    type: 'WITHDRAW',
+    amount
+  };
+}
+
+// Thậm chi không có middleware, ban có thể dispatch một action
+store.dispatch(withdrawMoney(100));
+
+// Nhưng cái bạn làm khi bạn cần bắt đầu một asynchronous action
+// như một API call, hay một router transition?
+
+// Dùng thunk.
+// Một thunk là một function để trả về một function
+// Dưới đây là một thunk
+
+// Thunk nó gộp luôn 2 định nghĩa của REDUCER và ACTIONS. Tại sao như vậy:
+// 1. ACTION phải là một object, kiểu vầy
+// const action = {
+// 		type: 'GET_DATA',
+// 		data: getAPI()
+// 	};
+// ACTION phải được truyền vào REDUCER để thực thi trong STORE,
+// và được gọi ra bởi DISPATCH. DISPATCH là một object, kiểu vầy
+// store.dispatch({
+//		type: 'UPDATE_DATA'
+//	})
+// 2. Với THUNK bạn chỉ việc tạo ra function với tha hồ đối số,
+// function này có đối số dispatch sẵn. Nó sẽ được truyền vào trong STORE
+// nhờ applyMiddleware(thunk)
+// Khi dùng chỉ việc gọi ra như bình thường:
+// store.dispatch(
+//		makeASandwichWithSecretSauce('Me')
+//	);
+// Cái function bạn viết chính là THUNK
+// Nó không phải là REDUCER và cũng không phải ACTIONS như định nghĩa ban đầu của REDUX
+
+function makeASandwichWithSecretSauce(forPerson) {
+
+	// Đảo ngược (Invert) control
+	// Trả về một function và thu nhận (accepts) `dispatch` nên chúng ta có thể dispatch luôn.
+	// Thunk middleware biết làm như nào để bật (turn) thunk async actions đến actions
+
+	return function (dispatch) {
+		return fetchSecretSauce().then(
+			sauce => dispatch(makeASandwich(forPerson, sauce)),
+			error => dispatch(apologize('The Sandwich Shop', forPerson, error))
+		)
+	}
+
+}
+
+// Thunk middleware dispatch thunk async actions
+// như thể chúng là actions
+
+store.dispatch(
+	makeASandwichWithSecretSauce('Me')
+);
+
+// Nó thậm chí cẩn thận trả về giá trị của thunk trả về
+// từ dispatch, nên tôi có thể móc Promise miễn là tôi return chúng
+
+store.dispatch(
+	makeASandwichWithSecretSauce('My Life')
+).then(()=>{
+	console.log('Done!');
+});
+
+// Trong thực tế, Tôi có thể viết một ACTION CREATOR như dispatch
+// actions và async actions từ những action creators khác
+// và tôi có thể tạo control flow với Promise.
+
+function makeSandwichesForEverybody() {
+	return function (dispatch, getState) {
+		if (!getState().sandwiches.isShopOpen) {
+			// Ban không phải trả về Promise, nhưng nó là một quy ước tiện dụng(handy convention)
+			// nên hãy luôn gọi .then() trong kết quả async dispatch 
+			return Promise.resolve();
+		}
+		// Chúng ta có thể dispatch cả object actions và các thunk khác
+		// cái đó sẽ kết hợp những asynchronous actions trong một single flow.
+
+		return dispatch(
+			makeASandwichWithSecretSauce('My Grandma')
+			).then(()=>
+				Promise.all([
+					dispatch(makeASandwichWithSecretSauce('Me')),
+					dispatch(makeASandwichWithSecretSauce('My wife'))
+				])
+			).then(() =>
+				dispatch(makeASandwichWithSecretSauce('Our kids'))
+			).then(() => 
+				dispatch(getState().myMoney > 42 ? withdrawMoney(42) : apologize('Me','The sandwich Shop')
+			)
+		);
+	}
+}
+
+// Điều này rấy hữu ích cho server side rendering, bởi vì tôi có thể chờ
+// Cho đến khi dữ liệu đến, sau đó synchronously render the app
+
+store.dispatch(
+	makeSandwichesForEverybody()
+).then(()=>
+	response.send(ReactDOMServer.renderToString(<MyApp store={store} />))
+);
+
+// Tôi có thể dispatch một thunk async action từ một component
+// bất kỳ lúc nào props của nó thay đổi để load dat còn thiếu
+
+import { connect } from 'react-redux';
+import { Component } from 'react';
+
+class SandwichShop extends Component {
+	componentDidMount(){
+		this.props.dispatch(
+			makeASandwichWithSecretSauce(this.props.forPerson)
+		);
+	}
+
+	componentWillReceiveProps(nextProps){
+		if (nextProps.forPerson !== this.props.forPerson) {
+			this.props.dispatch(
+	        	makeASandwichWithSecretSauce(networkxtProps.forPerson)
+	      	);
+		}
+	}
+
+	render() {
+    	return <p>{this.props.sandwiches.join('mustard')}</p>
+ 	}
+}
+
+
+export default connect(
+	state => ({
+    	sandwiches: state.sandwiches
+	})
+)(SandwichShop);
+
+Truyền vào một Custom Argument
+
+sử dụng withExtraArgument function:
+
+const store = createStore(
+  reducer,
+  applyMiddleware(thunk.withExtraArgument(api))
+)
+
+// sau đó (later)
+function fetchUser(id) {
+  return (dispatch, getState, api) => {
+    // you can use api here
+  }
+}
+
+Để pass qua nhiều thứ, chỉ cần bọc chúng trong một single object và dùng destructuring:
+
+const store = createStore(
+  reducer,
+  applyMiddleware(thunk.withExtraArgument({ api, whatever }))
+)
+
+// sau đó
+function fetchUser(id) {
+  return (dispatch, getState, { api, whatever }) => {
+    // you can use api and something else here here
+  }
+}
+
+*** Redux Thunk ***
+
+
